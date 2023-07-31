@@ -16,5 +16,5 @@ git clone https://github.com/skudlur/waveplot.git
 
 ```bash
 cd waveplot/src
-cargo run
+cargo run -- --vcd ./test_vcds/test1.vcd --verbose
 ```
