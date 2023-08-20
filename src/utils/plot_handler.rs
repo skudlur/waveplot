@@ -1,8 +1,15 @@
+use vcd::{
+    Parser,
+    Command
+};
+
 use std::{
     error::Error, 
     io,
+    io::BufReader,
     env,
-    fs
+    fs,
+    fs::File 
 };
 
 use crossterm::{
@@ -22,7 +29,7 @@ struct App<'a> {
 impl<'a> App<'a> {
     fn new() -> App<'a> {
         App {
-            titles: vec!["Plot", "VCD Code", "Tab2", "Tab3"],
+            titles: vec!["Plot", "Header", "VCD Code", "Tab3"],
             index: 0,
             scroll: 0
         }
@@ -90,10 +97,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Char('d') => app.next(),
                     KeyCode::Char('a') => app.previous(),
-                    KeyCode::Char('w') => app.scroll_up(),
-                    KeyCode::Char('s') => app.scroll_down(),
-                    KeyCode::Up => app.scroll_up(),
-                    KeyCode::Down => app.scroll_down(),
+                    KeyCode::Char('w') => app.scroll_down(),
+                    KeyCode::Char('s') => app.scroll_up(),
+                    KeyCode::Up => app.scroll_down(),
+                    KeyCode::Down => app.scroll_up(),
                     KeyCode::Right => app.next(),
                     KeyCode::Left => app.previous(),
                     _ => {}
@@ -113,6 +120,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         Err(_) => String::from(""),
     };
 
+    // Extract the VCD code into a renderable format
     let vcd_code_content = file_content
         .lines()
         .map(|l| Line::from(l))
@@ -181,7 +189,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     //     _ => unreachable!(),
     // };
 
-    if app.index == 1 {
+    if app.index == 2 {
         f.render_widget(vcd_code_tab, chunks[1]);
     } else {
         let inner = Block::default().title("Inner 1").borders(Borders::ALL);
@@ -190,11 +198,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 }
 
 // Get the path passed to the program
-fn get_path() -> String {
+pub fn get_path() -> String {
     let envs = env::args();
 
     for (i, env) in envs.enumerate() {
-        // Skip the first argument, which is the program name
+        // Skip the first argument, which is the program name (waveplot or ./waveplot) in this case
         if i == 0 {
             continue;
         } else {
