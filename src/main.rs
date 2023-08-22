@@ -10,10 +10,10 @@ use utils::{
 use std::{
     fs,
     fs::File,
-    io::BufReader
+    io::BufReader, thread::Scope, vec
 };
 
-use vcd::{Command, Parser};
+use vcd::{Command, Parser, ScopeItem};
 
 fn main() {
     let args_type = get_args_type();
@@ -25,13 +25,44 @@ fn main() {
     {
         argument_handler();
     } else {
-        let file_path = get_path();
-        let file = File::open(file_path).unwrap();
+        plot_handler();
+        // let file_path = get_path();
+        // let file = File::open(file_path).unwrap();
 
-        let mut parser = Parser::new(BufReader::new(file));
+        // let mut variable_types = Vec::new();
+        // let mut variable_sizes = Vec::new();
+        // let mut variable_references = Vec::new();
+        // // for temporarily holding variable indexes
+        // let mut variable_indexes_ref = Vec::new();
+        // let mut variable_indexes = Vec::new();
 
-        let header = parser.parse_header().unwrap();
 
-        println!("Header: {:?}", header);
+        // let mut parser = Parser::new(BufReader::new(file));
+
+        // let header = parser.parse_header().unwrap();
+
+        // let scope = match &header.items[0] {
+        //     ScopeItem::Scope(sc) => sc,
+        //     x => panic!("Expected Scope, found {:?}", x),
+        // };
+
+        // scope.items.iter().for_each(|x| match x {
+        //     ScopeItem::Var(v) => {
+        //         variable_types.push(v.var_type.clone());
+        //         variable_sizes.push(v.size);
+        //         variable_references.push(v.reference.clone());
+        //         variable_indexes_ref.push(v.index);
+        //     },
+        //     x => panic!("Expected Var, found {:?}", x),
+        // });
+
+        // variable_indexes_ref.iter().for_each(|x| {
+        //     if x.is_some() {
+        //         variable_indexes.push(x.unwrap().to_string());
+        //     } else {
+        //         variable_indexes.push("None".to_string());
+        //     }
+        // }
+        // );
     }
 }
