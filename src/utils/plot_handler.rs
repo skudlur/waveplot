@@ -281,6 +281,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, scroll_header_tab: u16, scrol
         // for temporarily holding variable indexes
         let mut variable_indexes_ref = Vec::new();
         let mut variable_indexes = Vec::new();
+        let mut variable_codes = Vec::new();
 
         let scope = match &header.items[0] {
             ScopeItem::Scope(sc) => sc,
@@ -292,6 +293,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, scroll_header_tab: u16, scrol
                 variable_sizes.push(v.size.to_string());
                 variable_references.push(v.reference.clone());
                 variable_indexes_ref.push(v.index);
+                variable_codes.push(v.code.to_string());
             }
             x => panic!("Expected Var, found {:?}", x),
         });
@@ -370,20 +372,20 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, scroll_header_tab: u16, scrol
 
         let selected_style = Style::default().add_modifier(Modifier::REVERSED);
 
-        let header_cells = ["Type", "Size", "Reference", "Index"]
+        let header_cells = ["Type", "Size", "Reference", "Index", "Code"]
             .iter()
             .map(|h| Cell::from(*h).style(Style::default().fg(Color::Red)));
         
         let header = Row::new(header_cells);
 
         let mut row_data = vec![
-            vec![".", ".", ".", "."]
+            vec![".", ".", ".", ".", "."]
         ];
         
         let loopLength = variable_types.len();
         
         for i in 0..loopLength {
-            row_data.push(vec![&variable_types[i], &variable_sizes[i], &variable_references[i], &variable_indexes[i]])
+            row_data.push(vec![&variable_types[i], &variable_sizes[i], &variable_references[i], &variable_indexes[i], &variable_codes[i]])
         } 
 
         let rows = row_data.iter().map(|item| {
@@ -421,10 +423,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, scroll_header_tab: u16, scrol
             )
             .highlight_style(selected_style)
             .widths(&[
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
             ]);
 
         f.render_stateful_widget(header_scope_block, inside_chunk[1], &mut app.state);
