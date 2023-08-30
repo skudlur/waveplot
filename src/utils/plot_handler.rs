@@ -389,13 +389,6 @@ fn ui<B: Backend>(
 
         let mut inner_chunks_constraint = Vec::new();
 
-        // inner_chunks_constrants should be Constrant::Percentage(100) for 0-2 charts
-        // for 3-5 charts there should be 2  Constraint::Percentage(50)
-        // for 6-8 charts there should be 3  Constraint::Percentage(33)
-        // and so on you can calculate the number of charts usingg variable_graph_coordinates.len()
-        // and then calculate the number of inner_chunks_constraint
-        // give me the code 
-
         let multiple_of_three = number_of_graphs / 3;
 
         match multiple_of_three {
