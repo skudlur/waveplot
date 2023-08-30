@@ -17,17 +17,19 @@ struct App<'a> {
     pub state: TableState,
     pub items: Vec<Vec<&'a str>>,
     pub items_length: usize,
+    pub scroll_parser_tab: u16,
 }
 
 impl<'a> App<'a> {
     fn new() -> App<'a> {
         App {
-            titles: vec!["Plot", "Tab3", "Header", "VCD Code"],
+            titles: vec!["Plot", "Parser", "Header", "VCD Code"],
             index: 0,
             scroll: 0,
             state: TableState::default(),
             items: vec![vec![".", ".", ".", ".", "."]],
             items_length: 0,
+            scroll_parser_tab: 0,
         }
     }
 
@@ -68,6 +70,16 @@ impl<'a> App<'a> {
             self.index -= 1;
         } else {
             self.index = self.titles.len() - 1;
+        }
+    }
+
+    pub fn scroll_parser_down(&mut self) {
+        self.scroll_parser_tab += 1;
+    }
+
+    pub fn scroll_parser_up(&mut self) {
+        if self.scroll_parser_tab > 0 {
+            self.scroll_parser_tab -= 1;
         }
     }
 }
@@ -131,7 +143,7 @@ fn run_app<B: Backend>(
                     app.previous();
                 }
 
-                if app.index == 2 {
+                if app.index == 3 {
                     if key.code == KeyCode::Char('w') {
                         if scroll_vcd_code_tab > 0 {
                             scroll_vcd_code_tab -= 1;
@@ -145,7 +157,7 @@ fn run_app<B: Backend>(
                     } else if key.code == KeyCode::Down {
                         scroll_vcd_code_tab += 1;
                     }
-                } else if app.index == 1 {
+                } else if app.index == 2 {
                     if key.code == KeyCode::Char('w') {
                         app.previous_header_tab()
                     } else if key.code == KeyCode::Char('s') {
@@ -154,6 +166,16 @@ fn run_app<B: Backend>(
                         app.previous_header_tab();
                     } else if key.code == KeyCode::Down {
                         app.next_header_tab();
+                    }
+                } else if app.index == 1 {
+                    if key.code == KeyCode::Char('w') {
+                        app.scroll_parser_up()
+                    } else if key.code == KeyCode::Char('s') {
+                        app.scroll_parser_down();
+                    } else if key.code == KeyCode::Up {
+                        app.scroll_parser_up()
+                    } else if key.code == KeyCode::Down {
+                        app.scroll_parser_down();
                     }
                 }
             }
@@ -209,8 +231,7 @@ fn ui<B: Backend>(
             variable_codes.push(v.code.to_string());
             variable_values.insert(v.code.to_string(), Vec::<String>::new());
         }
-        _ => {}
-        // x => panic!("Expected Var, found {:?}", x),
+        _ => {} // x => panic!("Expected Var, found {:?}", x),
     });
 
     variable_indexes_ref.iter().for_each(|x| {
@@ -221,9 +242,52 @@ fn ui<B: Backend>(
         }
     });
 
+    let mut parse_line_by_line = Vec::new();
+
     parser.for_each(|f| {
         match f.unwrap() {
+            Command::Begin(id) => {
+                parse_line_by_line.push(format!("Begin: {:?}", id));
+            }
+            Command::ChangeReal(id, value) => {
+                parse_line_by_line.push(format!("{:?} changed to {:?}", id.to_string(), value));
+            }
+            Command::ChangeString(id, value) => {
+                parse_line_by_line.push(format!("{:?} changed to {:?}", id.to_string(), value));
+            }
+            Command::Comment(comment) => {
+                parse_line_by_line.push(format!("Comment: {:?}", comment));
+            }
+            Command::Date(date) => {
+                parse_line_by_line.push(format!("Date: {:?}", date));
+            }
+            Command::End(id) => {
+                parse_line_by_line.push(format!("End: {:?}", id));
+            }
+            Command::ChangeVector(id, value) => {
+                parse_line_by_line.push(format!(
+                    "{:?} changed to {:?}",
+                    id.to_string(),
+                    value.to_string()
+                ));
+            }
+            Command::Enddefinitions => {
+                parse_line_by_line.push(format!("End Definitions"));
+            }
+            Command::ScopeDef(scope_type, name) => {
+                parse_line_by_line.push(format!("Scope Def: {:?} {:?}", scope_type, name));
+            }
+            Command::Timescale(time, unit) => {
+                parse_line_by_line.push(format!("Timescale: {:?} {:?}", time, unit));
+            }
+            Command::Version(version) => {
+                parse_line_by_line.push(format!("Version: {:?}", version));
+            }
+            Command::Upscope => {
+                parse_line_by_line.push(format!("Upscope"));
+            }
             Command::ChangeScalar(id, value) => {
+                parse_line_by_line.push(format!("{:?} changed to {:?}", id.to_string(), value));
                 if value == Value::V0 {
                     variable_value_types.insert(id.to_string(), "0".to_string());
                 } else if value == Value::V1 {
@@ -241,6 +305,7 @@ fn ui<B: Backend>(
                     .push(value.to_string());
             }
             Command::Timestamp(time) => {
+                parse_line_by_line.push(format!("Timestamp: {:?}", time));
                 variable_time_stamps.push(time);
             }
             _ => {
@@ -376,20 +441,19 @@ fn ui<B: Backend>(
     });
 
     if app.index == 0 {
+        let number_of_graphs = variable_graph_coordinates.len();
 
-    let number_of_graphs = variable_graph_coordinates.len();
-
-    let mut outer_layout_constraints = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ]
-            .as_ref(),
-        )
-        .split(chunks[1]);
+        let mut outer_layout_constraints = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Percentage(33),
+                    Constraint::Percentage(33),
+                    Constraint::Percentage(33),
+                ]
+                .as_ref(),
+            )
+            .split(chunks[1]);
 
         let mut inner_chunks_constraint = Vec::new();
 
@@ -400,34 +464,29 @@ fn ui<B: Backend>(
             1 => {
                 inner_chunks_constraint.push(Constraint::Percentage(50));
                 inner_chunks_constraint.push(Constraint::Percentage(50));
-            },
+            }
             _ => {
                 for _ in 1..multiple_of_three {
-                    inner_chunks_constraint.push(Constraint::Percentage(100/ multiple_of_three as u16));
+                    inner_chunks_constraint
+                        .push(Constraint::Percentage(100 / multiple_of_three as u16));
                 }
             }
         }
-        
+
         let mut left_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            inner_chunks_constraint.as_ref(),
-        )
-        .split(outer_layout_constraints[0]);
+            .direction(Direction::Vertical)
+            .constraints(inner_chunks_constraint.as_ref())
+            .split(outer_layout_constraints[0]);
 
         let mut middle_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            inner_chunks_constraint.as_ref(),
-        )
-        .split(outer_layout_constraints[1]);
+            .direction(Direction::Vertical)
+            .constraints(inner_chunks_constraint.as_ref())
+            .split(outer_layout_constraints[1]);
 
         let mut right_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            inner_chunks_constraint.as_ref(),
-        )
-        .split(outer_layout_constraints[2]);
+            .direction(Direction::Vertical)
+            .constraints(inner_chunks_constraint.as_ref())
+            .split(outer_layout_constraints[2]);
 
         for (index, value) in variable_graphs_converted_coordinates.iter().enumerate() {
             let datasets_one = vec![Dataset::default()
@@ -525,7 +584,6 @@ fn ui<B: Backend>(
                 f.render_widget(chart_one, *chunk);
             }
         }
-
     } else if app.index == 2 {
         let header_scope_type = scope.clone().unwrap().scope_type.to_string();
         let header_scope_identifier = scope.clone().unwrap().identifier.to_string();
@@ -662,8 +720,30 @@ fn ui<B: Backend>(
     } else if app.index == 3 {
         f.render_widget(vcd_code_tab, chunks[1]);
     } else {
-        let inner = Block::default().title("Inner 1").borders(Borders::ALL);
-        f.render_widget(inner, chunks[1]);
+        // app.index = 1 (Line by line parser)
+        let mut parser_content = Vec::new();
+
+        parse_line_by_line.iter().for_each(|f| {
+            parser_content.push(Line::from(
+                f.to_string()));
+        });
+
+        let parser_block = Paragraph::new(parser_content)
+        .style(Style::default().fg(Color::Gray))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::Blue))
+                .title(Span::styled(
+                    "Parser (use 'w' and 's' or up and down arrow keys to scroll)",
+                    Style::default().add_modifier(Modifier::BOLD),
+                )),
+        )
+        .alignment(Alignment::Left)
+        .scroll((app.scroll_parser_tab, 0))
+        .wrap(Wrap { trim: true });
+
+        f.render_widget(parser_block, chunks[1]);
     }
 }
 

@@ -68,9 +68,48 @@ fn main() {
         // // if variable_values are not as long as the timestamp then we need to
         // // fill in the gaps with the last value
 
-        // parser.for_each(|f| {
+        // let mut parse_line_by_line = Vec::new();
+
+        // parser.for_each(|f| {   
         //     match f.unwrap() {
+        //         Command::Begin(id) => {
+        //                 parse_line_by_line.push(format!("Begin: {:?}", id));
+        //         }
+        //         Command::ChangeReal(id, value) => {
+        //             parse_line_by_line.push(format!("{:?} changed to {:?}", id.to_string(), value));
+        //         }
+        //         Command::ChangeString(id, value) => {
+        //             parse_line_by_line.push(format!("{:?} changed to {:?}", id.to_string(), value));
+        //         }
+        //         Command::Comment(comment) => {
+        //             parse_line_by_line.push(format!("Comment: {:?}", comment));
+        //         }
+        //         Command::Date(date) => {
+        //             parse_line_by_line.push(format!("Date: {:?}", date));
+        //         }
+        //         Command::End(id) => {
+        //             parse_line_by_line.push(format!("End: {:?}", id));
+        //         }
+        //         Command::ChangeVector(id, value) => {
+        //             parse_line_by_line.push(format!("{:?} changed to {:?}", id.to_string(), value.to_string()));
+        //         }
+        //         Command::Enddefinitions => {
+        //             parse_line_by_line.push(format!("End Definitions"));
+        //         }
+        //         Command::ScopeDef(scope_type, name) => {
+        //             parse_line_by_line.push(format!("Scope Def: {:?} {:?}", scope_type, name));
+        //         }
+        //         Command::Timescale(time, unit) => {
+        //             parse_line_by_line.push(format!("Timescale: {:?} {:?}", time, unit));
+        //         }
+        //         Command::Version(version) => {
+        //             parse_line_by_line.push(format!("Version: {:?}", version));
+        //         }
+        //         Command::Upscope => {
+        //             parse_line_by_line.push(format!("Upscope"));
+        //         }
         //         Command::ChangeScalar(id, value) => {
+        //             parse_line_by_line.push(format!("{:?} changed to {:?}", id.to_string(), value));
         //             if value == Value::V0 {
         //                 variable_value_types.insert(id.to_string(), "0".to_string());
         //             } else if value == Value::V1 {
@@ -88,6 +127,7 @@ fn main() {
         //                 .push(value.to_string());
         //         }
         //         Command::Timestamp(time) => {
+        //             parse_line_by_line.push(format!("Timestamp: {:?}", time));
         //             variable_time_stamps.push(time);
         //         }
         //         _ => {
@@ -131,6 +171,10 @@ fn main() {
 
         // variable_graphs_converted_coordinates.iter().for_each(|v| {
         //     println!("{:?}", v);
+        // });
+
+        // parse_line_by_line.iter().for_each(|f| {
+        //     println!("{:?}", f);
         // });
     }
 }
