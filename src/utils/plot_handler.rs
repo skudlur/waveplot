@@ -192,11 +192,15 @@ fn ui<B: Backend>(
     let mut variable_time_stamps = Vec::new();
     let mut variable_graph_coordinates = HashMap::new();
 
-    let scope = match &header.items[0] {
-        ScopeItem::Scope(sc) => sc,
-        x => panic!("Expected Scope, found {:?}", x),
-    };
-    scope.items.iter().for_each(|x| match x {
+    let scope = header.items.iter().find_map(|f| {
+        if let ScopeItem::Scope(scope) = f {
+            Some(scope.clone())
+        } else {
+            None
+        }
+    });
+
+    scope.clone().unwrap().items.iter().for_each(|x| match x {
         ScopeItem::Var(v) => {
             variable_types.push(v.var_type.to_string());
             variable_sizes.push(v.size.to_string());
@@ -205,7 +209,8 @@ fn ui<B: Backend>(
             variable_codes.push(v.code.to_string());
             variable_values.insert(v.code.to_string(), Vec::<String>::new());
         }
-        x => panic!("Expected Var, found {:?}", x),
+        _ => {}
+        // x => panic!("Expected Var, found {:?}", x),
     });
 
     variable_indexes_ref.iter().for_each(|x| {
@@ -250,10 +255,12 @@ fn ui<B: Backend>(
             variable_graph_coordinates.insert(v.0, Vec::<(u64, u64)>::new());
 
             for (index, element) in variable_values.get(v.0).unwrap().iter().enumerate() {
-                variable_graph_coordinates.get_mut(v.0).unwrap().push((
-                    variable_time_stamps[index],
-                    element.to_string().parse::<u64>().unwrap(),
-                ));
+                if element == "0" || element == "1" {
+                    variable_graph_coordinates.get_mut(v.0).unwrap().push((
+                        variable_time_stamps[index],
+                        element.to_string().parse::<u64>().unwrap(),
+                    ));
+                }
             }
         }
     });
@@ -367,9 +374,6 @@ fn ui<B: Backend>(
 
         variable_graphs_converted_coordinates.push(converted_data);
     });
-
-
-    // let mut render_index = Vec::new();
 
     if app.index == 0 {
 
@@ -523,8 +527,8 @@ fn ui<B: Backend>(
         }
 
     } else if app.index == 2 {
-        let header_scope_type = scope.scope_type.to_string();
-        let header_scope_identifier = scope.identifier.to_string();
+        let header_scope_type = scope.clone().unwrap().scope_type.to_string();
+        let header_scope_identifier = scope.clone().unwrap().identifier.to_string();
 
         let header_version_block = Paragraph::new(vec![Line::from(vec![Span::styled(
             header_version,

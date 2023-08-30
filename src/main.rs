@@ -43,16 +43,17 @@ fn main() {
         // let mut variable_time_stamps = Vec::new();
         // let mut variable_graph_coordinates = HashMap::new();
 
-        // let scope = match &header.items[0] {
-        //     ScopeItem::Scope(sc) => sc,
-        //     // x => panic!("Expected Scope, found {:?}", x),
-        //     _ => {
-        //         allow_print = false;
-        //         panic!("Expected Scope, found something else");
+        // let scope = header.items.iter().find_map(|f| {
+        //     if let ScopeItem::Scope(scope) = f {
+        //         Some(scope.clone())
+        //     } else {
+        //         None
         //     }
-        // };
+        // });
 
-        // scope.items.iter().for_each(|x| match x {
+
+
+        // scope.unwrap().items.iter().for_each(|x| match x {
         //     ScopeItem::Var(v) => {
         //         variable_types.push(v.var_type.to_string());
         //         variable_sizes.push(v.size.to_string());
@@ -101,10 +102,12 @@ fn main() {
         //         variable_graph_coordinates.insert(v.0, Vec::<(u64, u64)>::new());
 
         //         for (index, element) in variable_values.get(v.0).unwrap().iter().enumerate() {
-        //             variable_graph_coordinates.get_mut(v.0).unwrap().push((
-        //                 variable_time_stamps[index],
-        //                 element.to_string().parse::<u64>().unwrap(),
-        //             ));
+        //             if element == "0" || element == "1" {
+        //                 variable_graph_coordinates.get_mut(v.0).unwrap().push((
+        //                     variable_time_stamps[index],
+        //                     element.to_string().parse::<u64>().unwrap(),
+        //                 ));
+        //             }
         //         }
         //     }
         // });
