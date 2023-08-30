@@ -22,7 +22,7 @@ struct App<'a> {
 impl<'a> App<'a> {
     fn new() -> App<'a> {
         App {
-            titles: vec!["Plot", "Header", "VCD Code", "Tab3"],
+            titles: vec!["Plot", "Tab3", "Header", "VCD Code"],
             index: 0,
             scroll: 0,
             state: TableState::default(),
@@ -347,7 +347,7 @@ fn ui<B: Backend>(
         )
         .split(inside_chunk[0]);
 
-        let horizontal_chunks_inside_chunk_one = Layout::default()
+    let horizontal_chunks_inside_chunk_one = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
             [
@@ -368,77 +368,168 @@ fn ui<B: Backend>(
         variable_graphs_converted_coordinates.push(converted_data);
     });
 
+
+    // let mut render_index = Vec::new();
+
     if app.index == 0 {
-        let datasets_one = vec![Dataset::default()
-            .name("data")
-            .marker(symbols::Marker::Braille)
-            .style(Style::default().fg(Color::Yellow))
-            .graph_type(GraphType::Line)
-            .data(&variable_graphs_converted_coordinates[0])];
 
-        let chart_one = Chart::new(datasets_one)
-            .block(
-                Block::default()
-                    .title("Chart 3".cyan().bold())
-                    .borders(Borders::ALL),
-            )
-            .x_axis(
-                Axis::default()
-                    .title("Time Stamps")
-                    .style(Style::default().fg(Color::Gray))
-                    .bounds([
-                        variable_graphs_converted_coordinates[0][0].0,
-                        variable_graphs_converted_coordinates[0]
-                            [variable_graphs_converted_coordinates[0].len() - 1].0,
-                    ])
-                    .labels(vec!["0".bold(), "25".into(), "50".bold()]),
-            )
-            .y_axis(
-                Axis::default()
-                    .title("Y Axis")
-                    .style(Style::default().fg(Color::Gray))
-                    .bounds([0.0, 1.0])
-                    .labels(vec!["0".bold(), "2.5".into(), "5".bold()]),
-            );
+    let number_of_graphs = variable_graph_coordinates.len();
 
-            let datasets_two = vec![Dataset::default()
-            .name("data")
-            .marker(symbols::Marker::Braille)
-            .style(Style::default().fg(Color::Yellow))
-            .graph_type(GraphType::Line)
-            .data(&variable_graphs_converted_coordinates[1])];
+    let mut outer_layout_constraints = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+            ]
+            .as_ref(),
+        )
+        .split(chunks[1]);
 
-        let chart_two = Chart::new(datasets_two)
-            .block(
-                Block::default()
-                    .title("Chart 3".cyan().bold())
-                    .borders(Borders::ALL),
-            )
-            .x_axis(
-                Axis::default()
-                    .title("Time Stamps")
-                    .style(Style::default().fg(Color::Gray))
-                    .bounds([
-                        variable_graphs_converted_coordinates[0][0].0,
-                        variable_graphs_converted_coordinates[0]
-                            [variable_graphs_converted_coordinates[0].len() - 1].0,
-                    ])
-                    .labels(vec!["0".bold(), "25".into(), "50".bold()]),
-            )
-            .y_axis(
-                Axis::default()
-                    .title(
-                        Span::styled("Y azisd", Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC))
-                    )
-                    .style(Style::default().fg(Color::Gray))
-                    .bounds([0.0, 1.0])
-                    .labels(vec!["0".bold(), "2.5".into(), "5".bold()]),
-            );
+        let mut inner_chunks_constraint = Vec::new();
 
-        f.render_widget(chart_one, horizontal_chunks_inside_chunk_one[0]);
-        f.render_widget(chart_two, horizontal_chunks_inside_chunk_one[1]);
+        // inner_chunks_constrants should be Constrant::Percentage(100) for 0-2 charts
+        // for 3-5 charts there should be 2  Constraint::Percentage(50)
+        // for 6-8 charts there should be 3  Constraint::Percentage(33)
+        // and so on you can calculate the number of charts usingg variable_graph_coordinates.len()
+        // and then calculate the number of inner_chunks_constraint
+        // give me the code 
 
-    } else if app.index == 1 {
+        let multiple_of_three = number_of_graphs / 3;
+
+        match multiple_of_three {
+            0 => inner_chunks_constraint.push(Constraint::Percentage(100)),
+            1 => {
+                inner_chunks_constraint.push(Constraint::Percentage(50));
+                inner_chunks_constraint.push(Constraint::Percentage(50));
+            },
+            _ => {
+                for _ in 1..multiple_of_three {
+                    inner_chunks_constraint.push(Constraint::Percentage(100/ multiple_of_three as u16));
+                }
+            }
+        }
+        
+        let mut left_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            inner_chunks_constraint.as_ref(),
+        )
+        .split(outer_layout_constraints[0]);
+
+        let mut middle_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            inner_chunks_constraint.as_ref(),
+        )
+        .split(outer_layout_constraints[1]);
+
+        let mut right_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            inner_chunks_constraint.as_ref(),
+        )
+        .split(outer_layout_constraints[2]);
+
+        for (index, value) in variable_graphs_converted_coordinates.iter().enumerate() {
+            let datasets_one = vec![Dataset::default()
+                .name("data")
+                .marker(symbols::Marker::Braille)
+                .style(Style::default().fg(Color::Yellow))
+                .graph_type(GraphType::Line)
+                .data(&variable_graphs_converted_coordinates[index])];
+
+            let chart_one = Chart::new(datasets_one)
+                .block(
+                    Block::default()
+                        .title(Span::styled(
+                            variable_graph_coordinates
+                                .keys()
+                                .nth(index)
+                                .unwrap()
+                                .to_string(),
+                            Style::default()
+                                .fg(Color::Cyan)
+                                .add_modifier(Modifier::ITALIC),
+                        ))
+                        .borders(Borders::ALL),
+                )
+                .x_axis(
+                    Axis::default()
+                        .title("Time Stamps")
+                        .style(Style::default().fg(Color::Gray))
+                        .bounds([
+                            variable_graphs_converted_coordinates[index][0].0,
+                            variable_graphs_converted_coordinates[index]
+                                [variable_graphs_converted_coordinates[index].len() - 1]
+                                .0,
+                        ])
+                        .labels(vec![
+                            Span::styled(
+                                variable_graphs_converted_coordinates[index][0]
+                                    .0
+                                    .to_string(),
+                                Style::default().bold(),
+                            ),
+                            Span::styled(
+                                variable_graphs_converted_coordinates[index]
+                                    [variable_graphs_converted_coordinates[index].len() - 1]
+                                    .0
+                                    .to_string(),
+                                Style::default().bold(),
+                            ),
+                        ]),
+                )
+                .y_axis(
+                    Axis::default()
+                        .title(Span::styled(
+                            variable_graph_coordinates
+                                .keys()
+                                .nth(index)
+                                .unwrap()
+                                .to_string(),
+                            Style::default()
+                                .fg(Color::Yellow)
+                                .add_modifier(Modifier::ITALIC),
+                        ))
+                        .style(Style::default().fg(Color::Gray))
+                        .bounds([0.0, 1.0])
+                        .labels(vec!["0".bold(), "1".bold()]),
+                );
+
+            // match index % 3 {
+            //     0 => {
+            //         render_index.push(index / 3);
+            //         f.render_widget(chart_one, left_chunks[render_index[render_index.len()-1]]);
+            //     },
+            //     1 => {
+            //         render_index.push(index / 3);
+            //         f.render_widget(chart_one, middle_chunks[render_index[render_index.len()-1]]);
+            //     },
+            //     2 => {
+            //         render_index.push(index / 3);
+            //         f.render_widget(chart_one, right_chunks[render_index[render_index.len()-1]]);
+            //     },
+            //     _ => {}
+            // }
+
+            let chunk_index = index / 3;
+            let chunk_offset = index % 3;
+
+            let target_chunk = match chunk_offset {
+                0 => left_chunks.get(chunk_index),
+                1 => middle_chunks.get(chunk_index),
+                2 => right_chunks.get(chunk_index),
+                _ => None,
+            };
+
+            if let Some(chunk) = target_chunk {
+                f.render_widget(chart_one, *chunk);
+            }
+        }
+
+    } else if app.index == 2 {
         let header_scope_type = scope.scope_type.to_string();
         let header_scope_identifier = scope.identifier.to_string();
 
@@ -499,7 +590,10 @@ fn ui<B: Backend>(
 
         f.render_widget(header_version_block, horizontal_chunks_inside_chunk_zero[0]);
         f.render_widget(header_date_block, horizontal_chunks_inside_chunk_zero[1]);
-        f.render_widget(header_timescale_block, horizontal_chunks_inside_chunk_zero[2]);
+        f.render_widget(
+            header_timescale_block,
+            horizontal_chunks_inside_chunk_zero[2],
+        );
 
         let header_scope_title = format!("{} {}", header_scope_type, header_scope_identifier);
 
@@ -568,7 +662,7 @@ fn ui<B: Backend>(
             ]);
 
         f.render_stateful_widget(header_scope_block, inside_chunk[1], &mut app.state);
-    } else if app.index == 2 {
+    } else if app.index == 3 {
         f.render_widget(vcd_code_tab, chunks[1]);
     } else {
         let inner = Block::default().title("Inner 1").borders(Borders::ALL);
@@ -593,7 +687,10 @@ pub fn get_path() -> String {
 }
 
 // Get the chunks for the graphs
-pub fn get_graph_chunks(area: Rc<[Rect]>, graph_count: usize) -> [Rc<[ratatui::layout::Rect]>; 3] {
+pub fn get_graph_chunks(
+    area: &Rc<[ratatui::layout::Rect]>,
+    graph_count: usize,
+) -> [Rc<[ratatui::layout::Rect]>; 3] {
     let mut outer_layout_constraints = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
