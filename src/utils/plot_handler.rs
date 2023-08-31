@@ -13,11 +13,10 @@ use ratatui::{prelude::*, widgets::*};
 struct App<'a> {
     pub titles: Vec<&'a str>,
     pub index: usize,
-    pub scroll: u16,
     pub state: TableState,
-    pub items: Vec<Vec<&'a str>>,
     pub items_length: usize,
     pub scroll_parser_tab: u16,
+    pub scroll_vcd_tab: u16,
 }
 
 impl<'a> App<'a> {
@@ -25,11 +24,10 @@ impl<'a> App<'a> {
         App {
             titles: vec!["Plot", "Parser", "Header", "VCD Code"],
             index: 0,
-            scroll: 0,
             state: TableState::default(),
-            items: vec![vec![".", ".", ".", ".", "."]],
             items_length: 0,
             scroll_parser_tab: 0,
+            scroll_vcd_tab: 0,
         }
     }
 
@@ -82,13 +80,19 @@ impl<'a> App<'a> {
             self.scroll_parser_tab -= 1;
         }
     }
+
+    pub fn scroll_vcd_down(&mut self) {
+        self.scroll_vcd_tab += 1;
+    }
+
+    pub fn scroll_vcd_up(&mut self) {
+        if self.scroll_vcd_tab > 0 {
+            self.scroll_vcd_tab -= 1;
+        }
+    }
 }
 
 pub fn plot_handler() -> Result<(), Box<dyn Error>> {
-    // scroll handler for header and vcd code tabs
-    let mut scroll_header_tab: u16 = 0;
-    let mut scroll_vcd_code_tab: u16 = 0;
-
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -98,7 +102,7 @@ pub fn plot_handler() -> Result<(), Box<dyn Error>> {
 
     // create app and run it
     let app = App::new();
-    let res = run_app(&mut terminal, app, scroll_header_tab, scroll_vcd_code_tab);
+    let res = run_app(&mut terminal, app);
 
     // restore terminal
     disable_raw_mode()?;
@@ -116,25 +120,14 @@ pub fn plot_handler() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    mut app: App,
-    mut scroll_header_tab: u16,
-    mut scroll_vcd_code_tab: u16,
-) -> io::Result<()> {
+// takes control of terminal and key events
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
-        terminal.draw(|f| ui(f, &mut app, scroll_header_tab, scroll_vcd_code_tab))?;
+        terminal.draw(|f| ui(f, &mut app))?;
 
         // Handle keyboard events
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
-                // match key.code {
-                //     KeyCode::Char('w') => app.scroll_down(),
-                //     KeyCode::Char('s') => app.scroll_up(),
-                //     KeyCode::Up => app.scroll_down(),
-                //     KeyCode::Down => app.scroll_up(),
-                //     _ => {}
-                // }
                 if key.code == KeyCode::Char('q') {
                     return Ok(());
                 } else if key.code == KeyCode::Char('d') || key.code == KeyCode::Right {
@@ -143,21 +136,19 @@ fn run_app<B: Backend>(
                     app.previous();
                 }
 
+                // VCD Code Tab (index 3)
                 if app.index == 3 {
                     if key.code == KeyCode::Char('w') {
-                        if scroll_vcd_code_tab > 0 {
-                            scroll_vcd_code_tab -= 1;
-                        }
+                        app.scroll_vcd_up();
                     } else if key.code == KeyCode::Char('s') {
-                        scroll_vcd_code_tab += 1;
+                        app.scroll_vcd_down();
                     } else if key.code == KeyCode::Up {
-                        if scroll_vcd_code_tab > 0 {
-                            scroll_vcd_code_tab -= 1;
-                        }
+                        app.scroll_vcd_up();
                     } else if key.code == KeyCode::Down {
-                        scroll_vcd_code_tab += 1;
+                        app.scroll_vcd_down();
                     }
                 } else if app.index == 2 {
+                    // Header Tab (index 2)
                     if key.code == KeyCode::Char('w') {
                         app.previous_header_tab()
                     } else if key.code == KeyCode::Char('s') {
@@ -168,6 +159,7 @@ fn run_app<B: Backend>(
                         app.next_header_tab();
                     }
                 } else if app.index == 1 {
+                    // Parser Tab (index 1)
                     if key.code == KeyCode::Char('w') {
                         app.scroll_parser_up()
                     } else if key.code == KeyCode::Char('s') {
@@ -183,12 +175,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn ui<B: Backend>(
-    f: &mut Frame<B>,
-    app: &mut App,
-    scroll_header_tab: u16,
-    scroll_vcd_code_tab: u16,
-) {
+fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let file_path = get_path();
 
     let file = File::open(file_path.clone()).unwrap();
@@ -231,7 +218,7 @@ fn ui<B: Backend>(
             variable_codes.push(v.code.to_string());
             variable_values.insert(v.code.to_string(), Vec::<String>::new());
         }
-        _ => {} // x => panic!("Expected Var, found {:?}", x),
+        _ => {}
     });
 
     variable_indexes_ref.iter().for_each(|x| {
@@ -314,6 +301,8 @@ fn ui<B: Backend>(
         }
     });
 
+    // Check if the variable is a 0 or 1 and if it is, add it to the variable_graph_coordinates
+    // And fill its values with respect to timestamps tuple of (timestamp, value)
     variable_value_types.iter().for_each(|v| {
         if v.1 == "0" || v.1 == "1" {
             // fetch its values from variable_values
@@ -330,6 +319,9 @@ fn ui<B: Backend>(
         }
     });
 
+    // Making sure that values are filled for every timestamp
+    // If not, fill it with the last value
+    // Ex: (0, 1), (1, 1) will be converted to (0, 1), (1, 1), (2, 1) (3,1) etc. [3 is the last timestamp]
     variable_graph_coordinates.iter_mut().for_each(|v| {
         if variable_time_stamps.len() > v.1.len() {
             for index in v.1.len()..variable_time_stamps.len() {
@@ -338,20 +330,9 @@ fn ui<B: Backend>(
         }
     });
 
-    // Extract the file content into a vector of strings
-    let file_content = match fs::read_to_string(file_path.clone()) {
-        Ok(content) => content,
-        Err(_) => String::from(""),
-    };
-
-    // Extract the VCD code into a renderable format
-    let vcd_code_content = file_content
-        .lines()
-        .map(|l| Line::from(l))
-        .collect::<Vec<_>>();
-
     let size = f.size();
 
+    // Make 2 chunks, one for the tabs and one for the content
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
@@ -388,62 +369,22 @@ fn ui<B: Backend>(
         );
     f.render_widget(tabs, chunks[0]);
 
-    let vcd_code_tab = Paragraph::new(vcd_code_content)
-        .style(Style::default().fg(Color::Gray))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .style(Style::default().fg(Color::Blue))
-                .title(Span::styled(
-                    "Code (use 'w' and 's' or up and down arrow keys to scroll)",
-                    Style::default().add_modifier(Modifier::BOLD),
-                )),
-        )
-        .alignment(Alignment::Left)
-        .scroll((scroll_vcd_code_tab, 0))
-        .wrap(Wrap { trim: true });
-
-    let inside_chunk = Layout::default()
-        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
-        .split(chunks[1]);
-
-    let horizontal_chunks_inside_chunk_zero = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ]
-            .as_ref(),
-        )
-        .split(inside_chunk[0]);
-
-    let horizontal_chunks_inside_chunk_one = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ]
-            .as_ref(),
-        )
-        .split(inside_chunk[1]);
-
-    let mut variable_graphs_converted_coordinates = Vec::new();
-
-    variable_graph_coordinates.iter().for_each(|(key, value)| {
-        let converted_data: Vec<(f64, f64)> =
-            value.iter().map(|(a, b)| (*a as f64, *b as f64)).collect();
-
-        variable_graphs_converted_coordinates.push(converted_data);
-    });
-
     if app.index == 0 {
+        // Plot Tab (index 0)
         let number_of_graphs = variable_graph_coordinates.len();
 
-        let mut outer_layout_constraints = Layout::default()
+        let mut variable_graphs_converted_coordinates = Vec::new();
+
+        // Convert the coordinates to f64 since the chart component only accepts f64
+        variable_graph_coordinates.iter().for_each(|(key, value)| {
+            let converted_data: Vec<(f64, f64)> =
+                value.iter().map(|(a, b)| (*a as f64, *b as f64)).collect();
+
+            variable_graphs_converted_coordinates.push(converted_data);
+        });
+
+        // Make 3 columns
+        let outer_layout_constraints = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(
                 [
@@ -459,6 +400,9 @@ fn ui<B: Backend>(
 
         let multiple_of_three = number_of_graphs / 3;
 
+        // If the number of graphs is less than 3, then make it 100% of the screen
+        // If the number of graphs >2 <6, then make it 50% of the screen
+        // If the number of graphs >5 <9, use the same logic as above
         match multiple_of_three {
             0 => inner_chunks_constraint.push(Constraint::Percentage(100)),
             1 => {
@@ -473,17 +417,18 @@ fn ui<B: Backend>(
             }
         }
 
-        let mut left_chunks = Layout::default()
+        // Three columns
+        let left_chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(inner_chunks_constraint.as_ref())
             .split(outer_layout_constraints[0]);
 
-        let mut middle_chunks = Layout::default()
+        let middle_chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(inner_chunks_constraint.as_ref())
             .split(outer_layout_constraints[1]);
 
-        let mut right_chunks = Layout::default()
+        let right_chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(inner_chunks_constraint.as_ref())
             .split(outer_layout_constraints[2]);
@@ -554,25 +499,10 @@ fn ui<B: Backend>(
                         .labels(vec!["0".bold(), "1".bold()]),
                 );
 
-            // match index % 3 {
-            //     0 => {
-            //         render_index.push(index / 3);
-            //         f.render_widget(chart_one, left_chunks[render_index[render_index.len()-1]]);
-            //     },
-            //     1 => {
-            //         render_index.push(index / 3);
-            //         f.render_widget(chart_one, middle_chunks[render_index[render_index.len()-1]]);
-            //     },
-            //     2 => {
-            //         render_index.push(index / 3);
-            //         f.render_widget(chart_one, right_chunks[render_index[render_index.len()-1]]);
-            //     },
-            //     _ => {}
-            // }
-
             let chunk_index = index / 3;
             let chunk_offset = index % 3;
 
+            // Place the graphs in the respective chunks
             let target_chunk = match chunk_offset {
                 0 => left_chunks.get(chunk_index),
                 1 => middle_chunks.get(chunk_index),
@@ -585,6 +515,23 @@ fn ui<B: Backend>(
             }
         }
     } else if app.index == 2 {
+        // Header Tab (index 2)
+        let inside_chunk = Layout::default()
+            .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+            .split(chunks[1]);
+
+        let horizontal_chunks_inside_chunk_zero = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Percentage(33),
+                    Constraint::Percentage(33),
+                    Constraint::Percentage(33),
+                ]
+                .as_ref(),
+            )
+            .split(inside_chunk[0]);
+
         let header_scope_type = scope.clone().unwrap().scope_type.to_string();
         let header_scope_identifier = scope.clone().unwrap().identifier.to_string();
 
@@ -662,11 +609,12 @@ fn ui<B: Backend>(
 
         let mut row_data = vec![vec![".", ".", ".", ".", "."]];
 
-        let loopLength = variable_types.len();
+        let loop_length = variable_types.len();
 
-        app.items_length = loopLength + 1;
+        app.items_length = loop_length + 1;
 
-        for i in 0..loopLength {
+        // Make table component acceptable data
+        for i in 0..loop_length {
             row_data.push(vec![
                 &variable_types[i],
                 &variable_sizes[i],
@@ -718,30 +666,57 @@ fn ui<B: Backend>(
 
         f.render_stateful_widget(header_scope_block, inside_chunk[1], &mut app.state);
     } else if app.index == 3 {
+        // VCD Code Tab (index 3)
+        // Extract the file content into a vector of strings
+        let file_content = match fs::read_to_string(file_path.clone()) {
+            Ok(content) => content,
+            Err(_) => String::from(""),
+        };
+
+        // Extract the VCD code into a renderable format
+        let vcd_code_content = file_content
+            .lines()
+            .map(|l| Line::from(l))
+            .collect::<Vec<_>>();
+
+        let vcd_code_tab = Paragraph::new(vcd_code_content)
+            .style(Style::default().fg(Color::Gray))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(Style::default().fg(Color::Blue))
+                    .title(Span::styled(
+                        "Code (use 'w' and 's' or up and down arrow keys to scroll)",
+                        Style::default().add_modifier(Modifier::BOLD),
+                    )),
+            )
+            .alignment(Alignment::Left)
+            .scroll((app.scroll_vcd_tab, 0))
+            .wrap(Wrap { trim: true });
+
         f.render_widget(vcd_code_tab, chunks[1]);
     } else {
-        // app.index = 1 (Line by line parser)
+        // Parser Tab (index 1)
         let mut parser_content = Vec::new();
 
         parse_line_by_line.iter().for_each(|f| {
-            parser_content.push(Line::from(
-                f.to_string()));
+            parser_content.push(Line::from(f.to_string()));
         });
 
         let parser_block = Paragraph::new(parser_content)
-        .style(Style::default().fg(Color::Gray))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .style(Style::default().fg(Color::Blue))
-                .title(Span::styled(
-                    "Parser (use 'w' and 's' or up and down arrow keys to scroll)",
-                    Style::default().add_modifier(Modifier::BOLD),
-                )),
-        )
-        .alignment(Alignment::Left)
-        .scroll((app.scroll_parser_tab, 0))
-        .wrap(Wrap { trim: true });
+            .style(Style::default().fg(Color::Gray))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(Style::default().fg(Color::Blue))
+                    .title(Span::styled(
+                        "Parser (use 'w' and 's' or up and down arrow keys to scroll)",
+                        Style::default().add_modifier(Modifier::BOLD),
+                    )),
+            )
+            .alignment(Alignment::Left)
+            .scroll((app.scroll_parser_tab, 0))
+            .wrap(Wrap { trim: true });
 
         f.render_widget(parser_block, chunks[1]);
     }
@@ -761,51 +736,4 @@ pub fn get_path() -> String {
     }
 
     return String::from("");
-}
-
-// Get the chunks for the graphs
-pub fn get_graph_chunks(
-    area: &Rc<[ratatui::layout::Rect]>,
-    graph_count: usize,
-) -> [Rc<[ratatui::layout::Rect]>; 3] {
-    let mut outer_layout_constraints = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ]
-            .as_ref(),
-        )
-        .split(area[1]);
-
-    let mut chunk_constraints = Vec::new();
-
-    let multiple_of_three = graph_count / 3;
-
-    if multiple_of_three >= 0 && multiple_of_three < 2 {
-        chunk_constraints.push(Constraint::Percentage(100));
-    } else if multiple_of_three > 1 {
-        for _ in 1..multiple_of_three {
-            chunk_constraints.push(Constraint::Percentage(100 / multiple_of_three as u16));
-        }
-    }
-
-    let mut left_chunk = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(chunk_constraints.as_ref())
-        .split(outer_layout_constraints[0]);
-
-    let mut middle_chunk = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(chunk_constraints.as_ref())
-        .split(outer_layout_constraints[1]);
-
-    let mut right_chunk = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(chunk_constraints.as_ref())
-        .split(outer_layout_constraints[2]);
-
-    return [left_chunk, middle_chunk, right_chunk];
 }

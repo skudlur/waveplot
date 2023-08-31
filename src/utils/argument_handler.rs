@@ -2,7 +2,6 @@ use std::{
     env,
     error::Error,
     io,
-    path::Path,
     rc::Rc,
     time::{Duration, Instant},
 };
@@ -109,7 +108,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .constraints([Constraint::Percentage(100)].as_ref())
         .split(size);
 
-    let helpText = vec![
+    let help_text = vec![
         Line::from(""),
         Line::from("Usage:".bold().fg(Color::Gray)),
         Line::from(".      waveplot [PATH] ".fg(Color::LightCyan)),
@@ -126,7 +125,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     // Gap between the title and the version to align
     let version = format!(".                 v{}", env!("CARGO_PKG_VERSION"));
 
-    let versionText = vec![
+    let version_text = vec![
         Line::from(""),
         Line::from("Waveplot Version:".bold().fg(Color::Blue)),
         Line::from(version.fg(Color::Cyan)),
@@ -135,23 +134,23 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let mut text = vec![];
 
     if argument_type == Arguments::Help {
-        text = helpText;
-        renderParagraph(text, f, chunks)
+        text = help_text;
+        render_paragraph(text, f, chunks)
     } else if argument_type == Arguments::Version {
-        text = versionText;
-        renderParagraph(text, f, chunks)
+        text = version_text;
+        render_paragraph(text, f, chunks)
     } else if argument_type == Arguments::Empty {
         text = vec![
                 Line::from(""),
                 Line::from("Please enter a valid path to the vcd file".fg(Color::Red)),
             ];
-            text.extend(helpText);
-            renderParagraph(text, f, chunks)
+            text.extend(help_text);
+            render_paragraph(text, f, chunks)
     }
 
 }
 
-fn renderParagraph<B: Backend>(text: Vec<Line<'_>>, f: &mut Frame<'_, B>, chunks: Rc<[Rect]>) {
+fn render_paragraph<B: Backend>(text: Vec<Line<'_>>, f: &mut Frame<'_, B>, chunks: Rc<[Rect]>) {
     let title = format!(
         "\t 🌊 Waveplot v{} (press 'q' to exit) ",
         env!("CARGO_PKG_VERSION")
