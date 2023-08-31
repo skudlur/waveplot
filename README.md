@@ -12,12 +12,12 @@ cargo install waveplot
 ### Usage 
 - help
 ```bash
-waveplot --help
+waveplot --help / -h
 ```
 
 - version
 ```bash
-waveplot --version
+waveplot --version / -V
 ```
 
 - Generate a waveform from a VCD file
