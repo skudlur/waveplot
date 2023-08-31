@@ -437,7 +437,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             let datasets_one = vec![Dataset::default()
                 .name("data")
                 .marker(symbols::Marker::Braille)
-                .style(Style::default().fg(Color::Yellow))
+                .style(Style::default())
                 .graph_type(GraphType::Line)
                 .data(&variable_graphs_converted_coordinates[index])];
 
@@ -459,7 +459,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .x_axis(
                     Axis::default()
                         .title("Time Stamps")
-                        .style(Style::default().fg(Color::Gray))
+                        .style(Style::default())
                         .bounds([
                             variable_graphs_converted_coordinates[index][0].0,
                             variable_graphs_converted_coordinates[index]
@@ -494,7 +494,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                                 .fg(Color::Yellow)
                                 .add_modifier(Modifier::ITALIC),
                         ))
-                        .style(Style::default().fg(Color::Gray))
+                        .style(Style::default())
                         .bounds([0.0, 1.0])
                         .labels(vec!["0".bold(), "1".bold()]),
                 );
