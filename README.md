@@ -22,5 +22,5 @@ waveplot --version / -V
 
 - Generate a waveform from a VCD file
 ```bash
-waveplot <vcd_file> 
+waveplot <path_to_vcd_file> 
 ``` 
