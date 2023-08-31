@@ -335,7 +335,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // Make 2 chunks, one for the tabs and one for the content
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
+        .constraints([
+                Constraint::Ratio(2, 10),
+                Constraint::Ratio(8, 10)
+            ])
         .split(size);
 
     let block = Block::default();
@@ -388,9 +391,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             .direction(Direction::Horizontal)
             .constraints(
                 [
-                    Constraint::Percentage(33),
-                    Constraint::Percentage(33),
-                    Constraint::Percentage(33),
+                    Constraint::Ratio(1, 3),
+                    Constraint::Ratio(1, 3),
+                    Constraint::Ratio(1, 3),
                 ]
                 .as_ref(),
             )
@@ -437,7 +440,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             let datasets_one = vec![Dataset::default()
                 .name("data")
                 .marker(symbols::Marker::Braille)
-                .style(Style::default())
+                .style(Style::default().fg(Color::LightCyan))
                 .graph_type(GraphType::Line)
                 .data(&variable_graphs_converted_coordinates[index])];
 
