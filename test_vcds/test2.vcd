@@ -1,0 +1,28 @@
+$date
+Sun Jul 30 13:12:36 2023
+$end
+$version
+Riviera-PRO Version 2022.04.117.8517
+$end
+$timescale
+1 ns
+$end
+
+$scope module testMux $end
+$var wire 1 ! out $end
+$var reg 1 " a $end
+$var reg 1 # b $end
+$var reg 1 $ sel $end
+$upscope $end
+
+$enddefinitions $end
+$dumpvars
+1!
+1"
+0#
+0$
+$end
+#5
+1$
+0!
+#10

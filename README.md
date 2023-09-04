@@ -1,20 +1,26 @@
 # waveplot
 waveplot is a VCD waveform generator for the terminal.
 
-## Installation (dev)
-- Install the Rust compiler 'rustc' using rustup.
+### Requirements
+- cargo (Rust)
 
+### Installation
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+cargo install waveplot
 ```
-- Clone this repo 
 
+### Usage 
+- help
 ```bash
-git clone https://github.com/skudlur/waveplot.git
+waveplot --help / -h
 ```
-- Change directory to waveform/src and run the following
 
+- version
 ```bash
-cd waveplot/src
-cargo run
+waveplot --version / -V
 ```
+
+- Generate a waveform from a VCD file
+```bash
+waveplot <path_to_vcd_file> 
+``` 

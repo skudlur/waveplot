@@ -1,0 +1,71 @@
+$date
+Sun Jul 30 12:27:58 2023
+$end
+$version
+Riviera-PRO Version 2022.04.117.8517
+$end
+$timescale
+1 ns
+$end
+
+$scope module mul_tb $end
+$var wire 32 ! out [31:0] $end
+$var wire 1 " n_mul $end
+$var reg 1 # clk $end
+$var reg 1 $ rst $end
+$var reg 1 % en_mul $end
+$var reg 1 & rdy_mul $end
+$var reg 32 ' a [31:0] $end
+$var reg 32 ( b [31:0] $end
+$upscope $end
+
+$enddefinitions $end
+$dumpvars
+b100 !
+z"
+0#
+x$
+x%
+1&
+b10 '
+b10 (
+$end
+#5
+1#
+#10
+0#
+#15
+1#
+#20
+0#
+#25
+1#
+#30
+0#
+#35
+1#
+#40
+0#
+#45
+1#
+#50
+0#
+#55
+1#
+#60
+0#
+#65
+1#
+#70
+0#
+#75
+1#
+#80
+0#
+#85
+1#
+#90
+0#
+#95
+1#
+#100
