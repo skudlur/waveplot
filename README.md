@@ -24,3 +24,5 @@ waveplot --version / -V
 ```bash
 waveplot <path_to_vcd_file> 
 ``` 
+
+#### Contributor Name: Suhas K Viswanath
